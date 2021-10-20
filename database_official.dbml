@@ -1,0 +1,292 @@
+Project Award_Management_System_Database {
+    database_type: 'PostgreSQL'
+    Note: '''
+        # Award Management System(AMS) Database
+**Description**: Cedars Database for shiny app. Follows rules based on logical Relational Database design.
+**Style**: snake_case, as per PostgreSQL Documentation.
+        '''
+}
+Table accounts {
+  account_id integer [pk]
+  account_description varchar [not null]
+  overhead_incurred boolean
+}
+
+Table vendors {
+  vendor_id integer [pk]
+  vendor_name varchar [not null]
+}
+
+Table research_projects {
+  project_id integer [pk]
+  activity_number integer [unique]
+  contract_number varchar(255) [unique, not null]
+  award_number varchar(255) [unique]
+  fund_code smallint
+  proj_sponsor varchar
+  proj_title varchar
+  total_award numeric(15, 2) [not null]
+  projpersonnel_start_date date
+  projpersonnel_end_date date
+  department varchar
+  division varchar
+  subdivision varchar
+  proj_type varchar(255) [not null]
+  irb varchar(255) [unique]
+  iacuc varchar(255) [unique]
+  proj_start_date date
+  proj_end_date date
+  proj_status varchar(255) [not null]
+  requirement text
+  proj_note_date date
+  proj_note text
+  activityid smallint
+}
+
+Table project_personnel {
+  eid integer [pk]
+  first_name varchar(255)
+  last_name varchar
+  fte numeric(5, 2) [not null]
+  next_meeting_date date
+  salary_base_hourly numeric(10, 2)
+  pers_review_month smallint
+}
+
+Table project_personnel_effort {
+  project_id integer
+  eid integer
+  effort_allocated numeric(5, 2)
+  fringe_rate numeric(5, 2)
+  budgeted_percentage_effort numeric(5, 2) [not null]
+  costshared_percentage_effort numeric(5, 2)
+  pers_type varchar(255)
+  pi boolean
+  key_personnel boolean
+  salary_cap boolean
+  pers_end_date date
+
+Indexes {
+  (project_id, eid) [pk]
+}
+}
+
+Table period_budgeted_effort {
+  period_effort_id integer [pk]
+  project_id integer [not null]
+  eid integer [not null]
+  period_duration varchar(255)
+  period smallint
+  period_budget numeric(15, 2)
+  perseffort_percentage numeric(5, 2)
+  effort_allocated numeric(5, 2)
+  perseffort_total numeric(10, 2)
+}
+
+Table project_budget {
+  budget_id integer [pk]
+  project_id integer [not null]
+  proj_budget numeric(15, 2) [not null]
+  total_revenue numeric(15, 2)
+  proj_balance numeric(15, 2) [not null]
+  proj_available_balance numeric(15, 2) [not null]
+  proj_balance_after_costsharing numeric(15, 2) [not null]
+  proj_balance_at_fy_start numeric(15, 2) [not null]
+  academic_funding numeric(15, 2)
+  discretional_funding numeric(15, 2)
+  award_start_date date
+  award_end_date date
+  grant_officer varchar [not null]
+  summary_note text
+  action_item text
+}
+
+Table revenue_details {
+  revenue_id integer [pk]
+  project_id integer [not null]
+  cash_revenue numeric(15, 2)
+  fixed_revenue numeric(15, 2)
+  transaction_date date
+  transaction_description text
+  revenue_detail_note text
+  dashboard_note text
+}
+
+Table project_costs {
+  costs_id integer [pk]
+  project_id integer [not null]
+  proj_total_cost numeric(15, 2) [not null]
+  proj_transfer_total numeric(15, 2)
+  proj_encumbrance_total numeric(15, 2)
+  costsharing numeric(15, 2)
+}
+
+Table period_resource_costs {
+  rescost_id integer [pk]
+  account_id integer [not null]
+  project_id integer [not null]
+  rescost_period smallint
+  rescost_period_duration varchar(255)
+  period_cost numeric(15, 2)
+}
+
+Table account_costs {
+  acccost_id integer [pk]
+  project_id integer [not null]
+  eid integer
+  account_id integer [not null]
+  journalid varchar(255)
+  account_cost numeric(15, 2) [not null]
+  cost_date date [not null]
+  resource_subcategory varchar [not null]
+  cost_description text
+}
+
+Table subawards {
+  po_number integer [pk]
+  vendor_id integer [not null]
+  subaward_amount numeric(15, 2) [not null]
+  subaward_encumbrance_total numeric(15, 2) [not null]
+  subaward_note text
+  subaward_start_date date [not null]
+  subaward_expiration_date date [not null]
+}
+
+Table purchase_orders {
+  purorders_id integer [pk]
+  project_id integer [not null]
+  po_number integer
+}
+
+Table po_invoice {
+  po_invoice_id integer [pk]
+  invoice_number integer [not null]
+  purorders_id integer [not null]
+  invoice_cost numeric(15, 2) [not null]
+  invoice_period daterange [not null]
+  invoice_date date [not null]
+  pi_approval_date date
+  invoice_note text
+  subk_first_25k numeric(15, 2)
+  subk_above_25k numeric(15, 2)
+  voucherid integer [unique]
+}
+
+Table subawards_modifications {
+  subawards_mod_id integer [pk]
+  po_number integer [not null]
+  modification smallint
+  subaward_additional_funds numeric(15, 2)
+  subaward_expiration_date date
+}
+
+Table grant_applications {
+  grant_app_id integer [pk]
+  app_policy_description text
+  app_sponsor varchar
+  app_sponsor_type varchar(255)
+  app_type varchar(255)
+  rfa_number varchar(255)
+  pa_number varchar(255)
+  app_proj_title varchar
+  app_submission_date date
+  app_due_date date
+  app_date_approved date
+  app_direct_cost numeric(15, 2)
+  app_indirect_cost numeric(15, 2)
+  app_total_cost numeric(15, 2)
+  app_number_of_years smallint
+  app_pi_effort numeric(5, 2)
+  app_status varchar(255)
+  app_note text
+  app_score smallint
+}
+
+Table project_subawards {
+  project_id integer
+  po_number integer
+  report_due_date date
+
+Indexes {
+  (project_id, po_number) [pk]
+}
+}
+
+Table personnel_subawards {
+  eid integer
+  po_number integer
+
+Indexes {
+  (eid, po_number) [pk]
+}
+}
+
+Table personnel_grantapps {
+  eid integer
+  grant_app_id integer
+
+Indexes {
+  (eid, grant_app_id) [pk]
+}
+}
+
+// 1-1
+Ref:research_projects.project_id - project_budget.project_id
+
+Ref:research_projects.project_id - project_costs.project_id
+
+// 1-N
+// Res. Projects
+Ref:research_projects.project_id < project_personnel_effort.project_id [delete: cascade]
+
+Ref:research_projects.project_id < period_budgeted_effort.project_id
+
+Ref:research_projects.project_id < revenue_details.project_id
+
+Ref:research_projects.project_id < account_costs.project_id
+
+Ref:research_projects.project_id < period_resource_costs.project_id
+
+Ref:research_projects.project_id < purchase_orders.project_id
+
+// Project Personnel
+Ref:project_personnel.eid < project_personnel_effort.eid [delete: cascade]
+
+Ref:project_personnel.eid < period_budgeted_effort.eid
+
+Ref:project_personnel.eid < account_costs.eid [delete: restrict]
+
+// Personnel Effort
+Ref:project_personnel_effort.(project_id, eid) < period_budgeted_effort.(project_id, eid)
+
+// Subawards
+Ref:subawards.po_number < purchase_orders.po_number [delete: restrict]
+
+Ref:subawards.po_number < subawards_modifications.po_number
+
+// PO
+Ref:purchase_orders.purorders_id < po_invoice.purorders_id
+
+// Validation tables
+// Accounts
+Ref:accounts.account_id < account_costs.account_id
+
+Ref:accounts.account_id < period_resource_costs.account_id
+
+Ref:vendors.vendor_id < subawards.vendor_id
+
+// Linking Tables
+Ref:research_projects.project_id < project_subawards.project_id
+
+Ref:subawards.po_number < project_subawards.po_number
+
+Ref:project_personnel.eid < personnel_subawards.eid
+
+Ref:subawards.po_number < personnel_subawards.po_number
+
+Ref:project_personnel.eid < personnel_grantapps.eid
+
+Ref:grant_applications.grant_app_id < personnel_grantapps.grant_app_id
+
+Ref:project_subawards.(project_id, po_number) < purchase_orders.(project_id, po_number) 
+
