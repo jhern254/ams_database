@@ -35,7 +35,7 @@ CREATE TABLE research_projects (
     fund_code smallint,                 -- need list of options. Add check later
     proj_sponsor varchar,
     proj_title varchar,
-    total_award numeric(15, 2) NOT NULL CHECK (total_award >= 0),
+--    total_award numeric(15, 2) NOT NULL CHECK (total_award >= 0), -- this doesn't exist.
     projpersonnel_start_date date,      
     projpersonnel_end_date date,
     department varchar,

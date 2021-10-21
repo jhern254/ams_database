@@ -32,8 +32,8 @@ CREATE TABLE staging_pfr (
     costsharing numeric(15, 2),
     proj_balance_after_costsharing numeric(15, 2) NOT NULL,
     grant_officer varchar,              
-    created_at timestamptz DEFAULT CURRENT_TIMESTAMP,
-    last_modified timestamptz DEFAULT CURRENT_TIMESTAMP
+    pfr_created_at timestamptz DEFAULT CURRENT_TIMESTAMP,
+    pfr_updated_at timestamptz DEFAULT CURRENT_TIMESTAMP 
 );
 
 -- Insert from pfr_clean.csv - needs to use psql. Works.
@@ -58,8 +58,23 @@ WITH (FORMAT CSV, HEADER);
 -----------------------------------------------------------------------------
 -----------------------------------------------------------------------------
 -- PFR view - include PK if writing back to table
-CREATE OR REPLACE VIEW ams_db.pfr AS
-SELECT 
+CREATE OR REPLACE VIEW pfr AS -- test first by just writing query. Multi join query
+SELECT rp.project_id, rp.contract_number, rp.fund_code, pp.last_name, 
+    pp.first_name, rp.department, rp.division, rp.subdivision, rp.proj_sponsor,
+    rp.proj_title, rp.award_number, rp.proj_type, ppe.fringe_rate, rp.irb, 
+    rp.iacuc, rp.proj_start_date, rp.proj_end_date, pb.award_end_date, 
+    rp.proj_status, pb.total_revenue, pb.proj_budget, pc.proj_transfer_total,
+    pc.proj_total_cost, pb.proj_balance, pc.proj_encumbrance_total,
+    pb.proj_available_balance, pc.costsharing, pb.proj_balance_after_costsharing,
+    pb.grant_officer, rp.rp_created_at, rp.rp_updated_at
+FROM research_projects rp JOIN project_personnel_effort ppe    -- change joins later. left join
+    ON rp.project_id = ppe.project_id
+JOIN project_personnel pp
+    ON ppe.eid = pp.eid
+JOIN project_budget pb
+    ON rp.project_id = pb.project_id
+JOIN project_costs pc
+    ON rp.project_id = pc.project_id
 
 
 
@@ -71,11 +86,22 @@ SELECT
 
 -- Trigger update fn - need to add delete, update cases
 -- PL/sql? or PL/python/R? PL/pgsql
-CREATE OR REPLACE FUNCTION ams_db.trig_pfr_ins_upd_del() RETURNS
+CREATE OR REPLACE FUNCTION trig_pfr_ins_upd_del() RETURNS
 trigger AS
 $$
 BEGIN
-
+    IF (TG_OP = 'INSERT') THEN
+        INSERT INTO research_projects(project_id, contract_number, fund_code,
+            department, division, subdivision, proj_sponsor, proj_title, 
+            award_number, proj_type, irb, iacuc, proj_start_date, proj_end_date,
+            proj_status, rp_created_at, rp_updated_at)
+        SELECT NEW.project_id, NEW.contract_number, NEW.fund_code, 
+            NEW.department, NEW.division, NEW.subdivision, NEW.proj_sponsor,
+            NEW.proj_title, NEW.award_number, NEW.proj_type, NEW.irb, NEW.iacuc,
+            NEW.proj_start_date, NEW.proj_end_date, NEW.proj_status,
+            NEW.rp_created_at, NEW.rp_updated_at;
+        RETURN NEW;
+    END IF;
 END;
 $$
 LANGUAGE plpgsql VOLATILE; -- may have more args
@@ -83,11 +109,21 @@ LANGUAGE plpgsql VOLATILE; -- may have more args
 
 -- Bind trigger to veiw
 CREATE TRIGGER trig_pfr_ins_upd_del
-INSTEAD OF INSERT OR UPDATE OR DELETE ON pfr
-FOR EACH ROW EXECUTE PROCEDURE ams_db.trig_pfr_ins_upd_del();
+INSTEAD OF INSERT ON pfr -- OR UPDATE OR DELETE
+FOR EACH ROW EXECUTE PROCEDURE trig_pfr_ins_upd_del();
 
 -- Data insert - Test on 1 row insert?
 -- COPY
+INSERT INTO pfr 
+    (project_id, contract_number, fund_code, last_name, first_name, department,
+    division, subdivision, proj_sponsor, proj_title, award_number, proj_type, fringe_rate, irb, iacuc, proj_start_date,
+    proj_end_date, award_end_date, proj_status, total_revenue, proj_budget, proj_transfer_total, 
+    proj_total_cost, proj_balance, proj_encumbrance_total, proj_available_balance, 
+    costsharing, proj_balance_after_costsharing, grant_officer, rp_created_at, rp_updated_at)
+SELECT *        -- view doesn't have any data but research_projects does?
+FROM staging_pfr 
+WHERE project_id = 146375;
+--LIMIT 10;
 
 
 
