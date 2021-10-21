@@ -125,7 +125,7 @@ CREATE TABLE project_budget (
     proj_balance numeric(15, 2) NOT NULL,
     proj_available_balance numeric(15, 2) NOT NULL,
     proj_balance_after_costsharing numeric(15, 2) NOT NULL,
-    proj_balance_at_fy_start numeric(15, 2) NOT NULL,
+    proj_balance_at_fy_start numeric(15, 2), --NOT NULL       -- TODO: doesn't exist?
     academic_funding numeric(15, 2),
     discretional_funding numeric(15, 2),
     award_start_date date,
