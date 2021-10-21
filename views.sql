@@ -4,20 +4,20 @@
 -- PFR staging table - Ton of bad data failing constraints. Can't do much.
 CREATE TABLE staging_pfr (
     project_id integer UNIQUE NOT NULL,   
-    contract_number varchar(255), --UNIQUE   -- TODO: Have to edit this in db. Can have NULLS. Also, Idk. 1 non-unique. 
-    fund_code smallint,                 -- need list of options. Add check later
+    contract_number varchar(255), 
+    fund_code smallint,         -- need list of options. Add check later
     last_name varchar, 
-    first_name varchar(255),    -- NEED EID
+    first_name varchar(255),    -- NEED EID, cannot insert into table for now
     department varchar,
     division varchar,
     subdivision varchar,
     proj_sponsor varchar,
     proj_title varchar,
-    award_number varchar(255),  --UNIQUE. Same problem. Bad data entry. CHECKED: Not unique at all and has lots of NULLs
-    proj_type varchar(255), --NOT NULL   -- TODO: Bad data entry. 1 NULL. Change for now to NULL
+    award_number varchar(255),  
+    proj_type varchar(255) NOT NULL,  
     fringe_rate numeric(5, 2),
-    irb varchar(255),    --UNIQUE -- TODO: Not unique. Change in tables.
-    iacuc varchar(255),  --UNIQUE -- TODO: Not unique. Change in tables.
+    irb varchar(255),    
+    iacuc varchar(255), 
     proj_start_date date,
     proj_end_date date,
     award_end_date date,
@@ -25,13 +25,13 @@ CREATE TABLE staging_pfr (
     total_revenue numeric(15, 2),
     proj_budget numeric(15, 2) NOT NULL CHECK (proj_budget >= 0),
     proj_transfer_total numeric(15, 2),
-    proj_total_cost numeric(15, 2) NOT NULL, --CHECK (proj_total_cost >= 0),  -- Fails. Idk, but 1 neg cost.
+    proj_total_cost numeric(15, 2) NOT NULL, 
     proj_balance numeric(15, 2) NOT NULL,
     proj_encumbrance_total numeric(15, 2),
     proj_available_balance numeric(15, 2) NOT NULL,
     costsharing numeric(15, 2),
     proj_balance_after_costsharing numeric(15, 2) NOT NULL,
-    grant_officer varchar,              -- TODO: Can have NULL
+    grant_officer varchar,              
     created_at timestamptz DEFAULT CURRENT_TIMESTAMP,
     last_modified timestamptz DEFAULT CURRENT_TIMESTAMP
 );
