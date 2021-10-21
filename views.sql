@@ -77,6 +77,7 @@ JOIN project_costs pc
     ON rp.project_id = pc.project_id
 
 
+-- check what inserts. Also inserts into PBE table but need EID
 
 -- WITH CHECK OPTION; -- only works on views w/ no triggers
 
@@ -85,12 +86,12 @@ JOIN project_costs pc
 -- FROM census.facts As f INNER JOIN cte2 c ON f.tract_id = c.last_tract;
 
 -- Trigger update fn - need to add delete, update cases
--- PL/sql? or PL/python/R? PL/pgsql
-CREATE OR REPLACE FUNCTION trig_pfr_ins_upd_del() RETURNS
+-- TODO: Add proper time stamp updates
+CREATE OR REPLACE FUNCTION pfr_on_insert() RETURNS
 trigger AS
 $$
 BEGIN
-    IF (TG_OP = 'INSERT') THEN
+    IF (TG_OP = 'INSERT') THEN  -- NEW. ?
         INSERT INTO research_projects(project_id, contract_number, fund_code,
             department, division, subdivision, proj_sponsor, proj_title, 
             award_number, proj_type, irb, iacuc, proj_start_date, proj_end_date,
@@ -98,8 +99,19 @@ BEGIN
         SELECT NEW.project_id, NEW.contract_number, NEW.fund_code, 
             NEW.department, NEW.division, NEW.subdivision, NEW.proj_sponsor,
             NEW.proj_title, NEW.award_number, NEW.proj_type, NEW.irb, NEW.iacuc,
-            NEW.proj_start_date, NEW.proj_end_date, NEW.proj_status,
-            NEW.rp_created_at, NEW.rp_updated_at;
+            NEW.proj_start_date, NEW.proj_end_date, NEW.proj_status;
+
+        INSERT INTO project_budget(project_id, proj_budget, total_revenue, 
+            proj_balance, proj_available_balance, proj_balance_after_costsharing
+            grant_officer)
+        SELECT NEW.project_id, NEW.proj_budget, NEW.total_revenue, 
+            NEW.proj_balance, NEW.proj_available_balance, 
+            NEW.proj_balance_after_costsharing, NEW.grant_officer;
+
+--        INSERT INTO 
+--        SELECT NEW ;
+            
+-- can't insert into project_personnel/ppe w/out EID
         RETURN NEW;
     END IF;
 END;
@@ -108,9 +120,9 @@ LANGUAGE plpgsql VOLATILE; -- may have more args
 
 
 -- Bind trigger to veiw
-CREATE TRIGGER trig_pfr_ins_upd_del
+CREATE TRIGGER pfr_on_insert_trigger
 INSTEAD OF INSERT ON pfr -- OR UPDATE OR DELETE
-FOR EACH ROW EXECUTE PROCEDURE trig_pfr_ins_upd_del();
+FOR EACH ROW EXECUTE PROCEDURE pfr_on_insert();
 
 -- Data insert - Test on 1 row insert?
 -- COPY
