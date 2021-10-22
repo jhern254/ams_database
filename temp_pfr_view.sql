@@ -27,18 +27,19 @@ BEGIN
         INSERT INTO research_projects(project_id, contract_number, fund_code,
             department, division, subdivision, proj_sponsor, proj_title, 
             award_number, proj_type, irb, iacuc, proj_start_date, proj_end_date,
-            proj_status, rp_created_at, rp_updated_at)
+            proj_status)
         SELECT NEW.project_id, NEW.contract_number, NEW.fund_code, 
             NEW.department, NEW.division, NEW.subdivision, NEW.proj_sponsor,
             NEW.proj_title, NEW.award_number, NEW.proj_type, NEW.irb, NEW.iacuc,
             NEW.proj_start_date, NEW.proj_end_date, NEW.proj_status;
 
         INSERT INTO project_budget(project_id, proj_budget, total_revenue, 
-            proj_balance, proj_available_balance, proj_balance_after_costsharing
-            grant_officer)
+            proj_balance, proj_available_balance, proj_balance_after_costsharing,
+            award_end_date, grant_officer)
         SELECT NEW.project_id, NEW.proj_budget, NEW.total_revenue, 
             NEW.proj_balance, NEW.proj_available_balance, 
-            NEW.proj_balance_after_costsharing, NEW.grant_officer;
+            NEW.proj_balance_after_costsharing, NEW.award_end_date, 
+            NEW.grant_officer;
 
         INSERT INTO project_costs(project_id, proj_total_cost, 
             proj_transfer_total, proj_encumbrance_total, costsharing)
@@ -66,7 +67,7 @@ INSERT INTO pfr_temp
         proj_status, total_revenue, proj_budget, proj_transfer_total,
         proj_total_cost, proj_balance, proj_encumbrance_total,
         proj_available_balance, costsharing, proj_balance_after_costsharing,
-        grant_officer, rp_created_at, rp_updated_at)
+        grant_officer)
 SELECT 
     project_id, contract_number, fund_code,  
         department, division, subdivision, proj_sponsor,
@@ -75,7 +76,7 @@ SELECT
         proj_status, total_revenue, proj_budget, proj_transfer_total,
         proj_total_cost, proj_balance, proj_encumbrance_total,
         proj_available_balance, costsharing, proj_balance_after_costsharing,
-        grant_officer, rp_created_at, rp_updated_at
+        grant_officer
 FROM staging_pfr 
 WHERE project_id = 146375;
 
