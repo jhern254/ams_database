@@ -4,20 +4,20 @@
 -- PFR staging table - Ton of bad data failing constraints. Can't do much.
 CREATE TABLE staging_pfr (
     project_id integer UNIQUE NOT NULL,   
-    contract_number varchar(255), --UNIQUE   -- TODO: Have to edit this in db. Can have NULLS. Also, Idk. 1 non-unique. 
-    fund_code smallint,                 -- need list of options. Add check later
+    contract_number varchar(255), 
+    fund_code smallint,         -- need list of options. Add check later
     last_name varchar, 
-    first_name varchar(255),    -- NEED EID
+    first_name varchar(255),    -- NEED EID, cannot insert into table for now
     department varchar,
     division varchar,
     subdivision varchar,
     proj_sponsor varchar,
     proj_title varchar,
-    award_number varchar(255),  --UNIQUE. Same problem. Bad data entry. CHECKED: Not unique at all and has lots of NULLs
-    proj_type varchar(255), --NOT NULL   -- TODO: Bad data entry. 1 NULL. Change for now to NULL
+    award_number varchar(255),  
+    proj_type varchar(255) NOT NULL,  
     fringe_rate numeric(5, 2),
-    irb varchar(255),    --UNIQUE -- TODO: Not unique. Change in tables.
-    iacuc varchar(255),  --UNIQUE -- TODO: Not unique. Change in tables.
+    irb varchar(255),    
+    iacuc varchar(255), 
     proj_start_date date,
     proj_end_date date,
     award_end_date date,
@@ -25,15 +25,15 @@ CREATE TABLE staging_pfr (
     total_revenue numeric(15, 2),
     proj_budget numeric(15, 2) NOT NULL CHECK (proj_budget >= 0),
     proj_transfer_total numeric(15, 2),
-    proj_total_cost numeric(15, 2) NOT NULL, --CHECK (proj_total_cost >= 0),  -- Fails. Idk, but 1 neg cost.
+    proj_total_cost numeric(15, 2) NOT NULL, 
     proj_balance numeric(15, 2) NOT NULL,
     proj_encumbrance_total numeric(15, 2),
     proj_available_balance numeric(15, 2) NOT NULL,
     costsharing numeric(15, 2),
     proj_balance_after_costsharing numeric(15, 2) NOT NULL,
-    grant_officer varchar,              -- TODO: Can have NULL
-    created_at timestamptz DEFAULT CURRENT_TIMESTAMP,
-    last_modified timestamptz DEFAULT CURRENT_TIMESTAMP
+    grant_officer varchar,              
+    pfr_created_at timestamptz DEFAULT CURRENT_TIMESTAMP,
+    pfr_updated_at timestamptz DEFAULT CURRENT_TIMESTAMP 
 );
 
 -- Insert from pfr_clean.csv - needs to use psql. Works.
@@ -58,10 +58,26 @@ WITH (FORMAT CSV, HEADER);
 -----------------------------------------------------------------------------
 -----------------------------------------------------------------------------
 -- PFR view - include PK if writing back to table
-CREATE OR REPLACE VIEW ams_db.pfr AS
-SELECT 
+CREATE OR REPLACE VIEW pfr AS -- test first by just writing query. Multi join query
+SELECT rp.project_id, rp.contract_number, rp.fund_code, pp.last_name, 
+    pp.first_name, rp.department, rp.division, rp.subdivision, rp.proj_sponsor,
+    rp.proj_title, rp.award_number, rp.proj_type, ppe.fringe_rate, rp.irb, 
+    rp.iacuc, rp.proj_start_date, rp.proj_end_date, pb.award_end_date, 
+    rp.proj_status, pb.total_revenue, pb.proj_budget, pc.proj_transfer_total,
+    pc.proj_total_cost, pb.proj_balance, pc.proj_encumbrance_total,
+    pb.proj_available_balance, pc.costsharing, pb.proj_balance_after_costsharing,
+    pb.grant_officer, rp.rp_created_at, rp.rp_updated_at
+FROM research_projects rp JOIN project_personnel_effort ppe    -- change joins later. left join
+    ON rp.project_id = ppe.project_id
+JOIN project_personnel pp
+    ON ppe.eid = pp.eid
+JOIN project_budget pb
+    ON rp.project_id = pb.project_id
+JOIN project_costs pc
+    ON rp.project_id = pc.project_id
 
 
+-- check what inserts. Also inserts into PBE table but need EID
 
 -- WITH CHECK OPTION; -- only works on views w/ no triggers
 
@@ -70,24 +86,56 @@ SELECT
 -- FROM census.facts As f INNER JOIN cte2 c ON f.tract_id = c.last_tract;
 
 -- Trigger update fn - need to add delete, update cases
--- PL/sql? or PL/python/R? PL/pgsql
-CREATE OR REPLACE FUNCTION ams_db.trig_pfr_ins_upd_del() RETURNS
+-- TODO: Add proper time stamp updates
+CREATE OR REPLACE FUNCTION pfr_on_insert() RETURNS
 trigger AS
 $$
 BEGIN
+    IF (TG_OP = 'INSERT') THEN  -- NEW. ?
+        INSERT INTO research_projects(project_id, contract_number, fund_code,
+            department, division, subdivision, proj_sponsor, proj_title, 
+            award_number, proj_type, irb, iacuc, proj_start_date, proj_end_date,
+            proj_status, rp_created_at, rp_updated_at)
+        SELECT NEW.project_id, NEW.contract_number, NEW.fund_code, 
+            NEW.department, NEW.division, NEW.subdivision, NEW.proj_sponsor,
+            NEW.proj_title, NEW.award_number, NEW.proj_type, NEW.irb, NEW.iacuc,
+            NEW.proj_start_date, NEW.proj_end_date, NEW.proj_status;
 
+        INSERT INTO project_budget(project_id, proj_budget, total_revenue, 
+            proj_balance, proj_available_balance, proj_balance_after_costsharing
+            grant_officer)
+        SELECT NEW.project_id, NEW.proj_budget, NEW.total_revenue, 
+            NEW.proj_balance, NEW.proj_available_balance, 
+            NEW.proj_balance_after_costsharing, NEW.grant_officer;
+
+--        INSERT INTO 
+--        SELECT NEW ;
+            
+-- can't insert into project_personnel/ppe w/out EID
+        RETURN NEW;
+    END IF;
 END;
 $$
 LANGUAGE plpgsql VOLATILE; -- may have more args
 
 
 -- Bind trigger to veiw
-CREATE TRIGGER trig_pfr_ins_upd_del
-INSTEAD OF INSERT OR UPDATE OR DELETE ON pfr
-FOR EACH ROW EXECUTE PROCEDURE ams_db.trig_pfr_ins_upd_del();
+CREATE TRIGGER pfr_on_insert_trigger
+INSTEAD OF INSERT ON pfr -- OR UPDATE OR DELETE
+FOR EACH ROW EXECUTE PROCEDURE pfr_on_insert();
 
 -- Data insert - Test on 1 row insert?
 -- COPY
+INSERT INTO pfr 
+    (project_id, contract_number, fund_code, last_name, first_name, department,
+    division, subdivision, proj_sponsor, proj_title, award_number, proj_type, fringe_rate, irb, iacuc, proj_start_date,
+    proj_end_date, award_end_date, proj_status, total_revenue, proj_budget, proj_transfer_total, 
+    proj_total_cost, proj_balance, proj_encumbrance_total, proj_available_balance, 
+    costsharing, proj_balance_after_costsharing, grant_officer, rp_created_at, rp_updated_at)
+SELECT *        -- view doesn't have any data but research_projects does?
+FROM staging_pfr 
+WHERE project_id = 146375;
+--LIMIT 10;
 
 
 
