@@ -49,3 +49,40 @@ BEGIN
 END;
 $$
 LANGUAGE plpgsql VOLATILE; -- may have more args
+
+
+-- Bind trigger to veiw
+CREATE TRIGGER pfr_temp_on_insert_trigger
+INSTEAD OF INSERT ON pfr_temp 
+FOR EACH ROW EXECUTE PROCEDURE pfr_temp_on_insert();
+
+
+-- Data insert - Test on 1 row insert
+INSERT INTO pfr_temp
+    (project_id, contract_number, fund_code,  
+        department, division, subdivision, proj_sponsor,
+        proj_title, award_number, proj_type, irb, 
+        iacuc, proj_start_date, proj_end_date, award_end_date, 
+        proj_status, total_revenue, proj_budget, proj_transfer_total,
+        proj_total_cost, proj_balance, proj_encumbrance_total,
+        proj_available_balance, costsharing, proj_balance_after_costsharing,
+        grant_officer, rp_created_at, rp_updated_at)
+SELECT 
+    project_id, contract_number, fund_code,  
+        department, division, subdivision, proj_sponsor,
+        proj_title, award_number, proj_type, irb, 
+        iacuc, proj_start_date, proj_end_date, award_end_date, 
+        proj_status, total_revenue, proj_budget, proj_transfer_total,
+        proj_total_cost, proj_balance, proj_encumbrance_total,
+        proj_available_balance, costsharing, proj_balance_after_costsharing,
+        grant_officer, rp_created_at, rp_updated_at
+FROM staging_pfr 
+WHERE project_id = 146375;
+
+-- HERE:check correctness and test in postgres
+
+
+
+
+
+
