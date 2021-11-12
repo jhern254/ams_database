@@ -1,0 +1,34 @@
+Table research_projects {
+  project_id integer [pk]
+
+}
+
+Table non_labor_budget_costs {
+  budget_cost_id integer [pk]
+  project_id integer [not null]
+  budget_type integer [not null]   // supplied list
+  budget_type_cost numeric(15, 2) [not null]
+  budget_cost_period smallint
+  budget_cost_period_duration varchar(255)
+//  cost_date date [not null]
+//  resource_subcategory varchar [not null]
+  cost_description text
+  vendor_id integer //has to be in vendor table
+}
+
+Table proj_actual_costs {
+  totcost_id integer [pk]
+  project_id integer [not null]
+  budget_type integer [not null]   // supplied list
+
+//  account_id integer [not null]
+  cost numeric(15, 2) [not null]
+//  cost_date date [not null]
+//  resource_subcategory varchar [not null]
+  cost_description text
+}
+
+
+
+Ref:research_projects.project_id < non_labor_budget_costs.project_id
+Ref:research_projects.project_id < proj_actual_costs.project_id
